@@ -1,0 +1,1 @@
+# loyalty-points-for-retailers
