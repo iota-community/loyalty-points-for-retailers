@@ -11,13 +11,7 @@
 module retail_store::loyalty {
 
     use iota::coin::{Self, TreasuryCap};
-    use iota::token::{Self, ActionRequest, Token};
-
-    /// Token amount does not match the `GIFT_PRICE`.
-    const EIncorrectAmount: u64 = 0;
-
-    /// The price for the `Gift`.
-    const GIFT_PRICE: u64 = 10;
+    use iota::token::{Self};
 
     /// The OTW for the Token / Coin.
     public struct LOYALTY has drop {}
@@ -87,34 +81,4 @@ module retail_store::loyalty {
 
         token::confirm_with_treasury_cap(cap, req, ctx);
     }
-
-    /*public fun buy_product(
-        token: Token<LOYALTY>,
-        ctx: &mut TxContext
-    ) {
-        assert!(token::value(&token) == GIFT_PRICE, EIncorrectAmount);
-
-        let mut req = token::spend(token, ctx);
-
-        // only required because we've set this rule
-        token::add_approval(GiftShop {}, &mut req, ctx);
-    }*/
-
-    /*/// Buy a gift for 10 tokens. The `Gift` is received, and the `Token` is
-    /// spent (stored in the `ActionRequest`'s `burned_balance` field).
-    public fun buy_a_gift(
-        token: Token<LOYALTY>,
-        ctx: &mut TxContext
-    ): (Gift, ActionRequest<LOYALTY>) {
-        assert!(token::value(&token) == GIFT_PRICE, EIncorrectAmount);
-
-        let gift = Gift { id: object::new(ctx) };
-        let mut req = tt
-INCLUDING DEPENDENCY Iotaoken::spend(token, ctx);
-
-        // only required because we've set this rule
-        token::add_approval(GiftShop {}, &mut req, ctx);
-
-        (gift, req)
-    }*/
 }

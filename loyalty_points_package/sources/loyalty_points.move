@@ -2,10 +2,10 @@
 /// Module: loyalty_points
 module retail_store::store {
 
-use iota::token::{Self, ActionRequest, Token};
+use iota::token::{Self};
 use iota::coin::{Self, TreasuryCap};
 use iota::iota::IOTA;
-use std::string::{Self, String};
+use std::string::{String};
 
 use retail_store::loyalty::{reward_user, LOYALTY};
 
@@ -81,26 +81,25 @@ entry fun buy_product_with_iota(product_type: String, payment: coin::Coin<IOTA>,
 }
 
 
-entry fun buy_product_with_loyalty(product_type: String, loyalty_cap: &mut TreasuryCap<LOYALTY>, ctx: &mut TxContext) {
+entry fun buy_product_with_loyalty(product_type: String, payment:token::Token<LOYALTY>, loyalty_cap: &mut TreasuryCap<LOYALTY>, ctx: &mut TxContext) {
     let mut default_type = ProductType::Laptop;
     let mut price = 0;
-    let mut loyalty_amount = 0;
 
     if (product_type.as_bytes() == b"Laptop") {
         default_type = ProductType::Laptop;
         price = 1000;
-        loyalty_amount = 100;
     } else if (product_type.as_bytes()  == b"Phone") {
         default_type = ProductType::Phone;
         price = 500;
-        loyalty_amount = 50;
     } else if (product_type.as_bytes()  == b"Tablet") {
         default_type = ProductType::Tablet;
         price = 300;
-        loyalty_amount = 30;
     } else {
         assert!(false, EInvalidProductType);
     };
+
+    let amount = payment.value();
+    assert!(amount >= price, EIncorrectAmount);
 
     let product = Product {
         id: object::new(ctx),
@@ -110,7 +109,7 @@ entry fun buy_product_with_loyalty(product_type: String, loyalty_cap: &mut Treas
 
     transfer::transfer(product, ctx.sender());
 
-    reward_user(loyalty_cap, loyalty_amount, ctx.sender(), ctx)
+    token::burn( loyalty_cap, payment)
 
 
 }
