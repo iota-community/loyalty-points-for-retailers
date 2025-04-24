@@ -66,64 +66,110 @@ export function BuyProduct() {
           }
         );
       } else {
-        const tokenIds = tokenInput
-        .split(',')
-        .map(id => id.trim())
-        .filter(Boolean);
-      
-      if (tokenIds.length === 0) {
-        setStatus('❌ You must provide at least one token object ID.');
-        return;
-      }
-      
-      const tokenType = `${LOYALTY_PACKAGE_ID}::loyalty::LOYALTY`;
-      const typeArg = `0x2::token::Token<${tokenType}>`;
-      
-      let finalToken;
-      
-      if (tokenIds.length === 1) {
-        // Only one token — no need to merge
-        finalToken = tx.object(tokenIds[0]);
-      } else {
-        // Merge tokens iteratively
-        let current = tx.object(tokenIds[0]);
-        for (let i = 1; i < tokenIds.length; i++) {
-          const next = tx.object(tokenIds[i]);
-          tx.moveCall({
-            target: `0x2::token::join`,
-            arguments: [current, next],
-            typeArguments: [typeArg],
-          });
-          // Note: We simulate the chaining; actual object ID is abstract
-          current = tx.object(`merged_${i}`); // Not used, but maintains structure
-        }
-      
-        finalToken = current;
-        setStatus(`🪙 Merged ${tokenIds.length} tokens into one.`);
-      }
-      
-      // Proceed with product purchase
-      tx.moveCall({
-        target: `${LOYALTY_PACKAGE_ID}::store::buy_product_with_loyalty`,
-        arguments: [
-          tx.pure.string(productType),
-          finalToken,
-          tx.object(TREASURY_CAP_ID),
-        ],
-      });
-      
-      signAndExecuteTransaction(
-        { transaction: tx },
-        {
-          onSuccess: (res) => {
-            setStatus(`✅ Purchase complete. Digest: ${res.digest}`);
-          },
-          onError: (err) => {
-            console.error(err);
-            setStatus('❌ Transaction failed.');
-          },
-        }
-      );
+
+    
+          if (!currentAccount?.address) {
+            setStatus('❌ Wallet not connected');
+            return;
+          }
+        
+          const tokenIds = tokenInput
+            .split(',')
+            .map((id) => id.trim())
+            .filter(Boolean);
+        
+          if (tokenIds.length === 0) {
+            setStatus('❌ You must provide at least one token object ID.');
+            return;
+          }
+        
+          const loyaltyType = `${LOYALTY_PACKAGE_ID}::loyalty::LOYALTY`;
+          //const typeArg = `0x2::token::Token<${loyaltyType}>`;
+        
+          //const price = productPrices[productType];
+        
+          try {
+            if (tokenIds.length === 1) {
+              // ✅ One token → direct purchase
+              const tx = new Transaction();
+        
+              tx.moveCall({
+                target: `${LOYALTY_PACKAGE_ID}::store::buy_product_with_loyalty`,
+                arguments: [
+                  tx.pure.string(productType),
+                  tx.object(tokenIds[0]),
+                  tx.object(TREASURY_CAP_ID),
+                ],
+              });
+        
+              setStatus('🛒 Submitting purchase...');
+              signAndExecuteTransaction(
+                { transaction: tx },
+                {
+                  onSuccess: (res) =>
+                    setStatus(`✅ Purchase complete. Digest: ${res.digest}`),
+                  onError: (err) => {
+                    console.error(err);
+                    setStatus('❌ Transaction failed.');
+                  },
+                }
+              );
+            } else {
+              // ✅ Multiple tokens → merge first, then purchase
+              const mergeTx = new Transaction();
+              const base = mergeTx.object(tokenIds[0]);
+        
+              for (let i = 1; i < tokenIds.length; i++) {
+                const next = mergeTx.object(tokenIds[i]);
+                mergeTx.moveCall({
+                  target: `0x2::token::join`,
+                  arguments: [base, next],
+                  typeArguments: [loyaltyType],
+                });
+              }
+        
+              setStatus(`🪙 Merging ${tokenIds.length} tokens...`);
+              signAndExecuteTransaction(
+                { transaction: mergeTx },
+                {
+                  onSuccess: (res) => {
+                    setStatus(`✅ Tokens merged. Digest: ${res.digest}. Proceeding to purchase...`);
+        
+                    // Step 2: use the original first token (it’s now the merged one)
+                    const purchaseTx = new Transaction();
+        
+                    purchaseTx.moveCall({
+                      target: `${LOYALTY_PACKAGE_ID}::store::buy_product_with_loyalty`,
+                      arguments: [
+                        purchaseTx.pure.string(productType),
+                        purchaseTx.object(tokenIds[0]), // ✅ THIS is the merged token
+                        purchaseTx.object(TREASURY_CAP_ID),
+                      ],
+                    });
+        
+                    signAndExecuteTransaction(
+                      { transaction: purchaseTx },
+                      {
+                        onSuccess: (res2) =>
+                          setStatus(`✅ Product purchased. Digest: ${res2.digest}`),
+                        onError: (err) => {
+                          console.error(err);
+                          setStatus('❌ Purchase transaction failed.');
+                        },
+                      }
+                    );
+                  },
+                  onError: (err) => {
+                    console.error(err);
+                    setStatus('❌ Token merge failed.');
+                  },
+                }
+              );
+            }
+          } catch (e) {
+            console.error(e);
+            setStatus('❌ Unexpected error during transaction.');
+          }       
       
       }      
 
