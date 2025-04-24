@@ -1,0 +1,31 @@
+---
+compiled_package_info:
+  package_name: retail_store
+  address_alias_instantiation:
+    iota: "0000000000000000000000000000000000000000000000000000000000000002"
+    retail_store: "0000000000000000000000000000000000000000000000000000000000000000"
+    std: "0000000000000000000000000000000000000000000000000000000000000001"
+  source_digest: F981248DD9E403771C994D4412FDFD1167FEE783349937A4E89660AEAB1113B4
+  build_flags:
+    dev_mode: false
+    test_mode: false
+    generate_docs: false
+    save_disassembly: false
+    install_dir: ~
+    force_recompilation: false
+    lock_file: "./Move.lock"
+    fetch_deps_only: false
+    skip_fetch_latest_git_deps: false
+    default_flavor: iota
+    default_edition: ~
+    deps_as_root: false
+    silence_warnings: false
+    warnings_are_errors: false
+    json_errors: false
+    additional_named_addresses: {}
+    lint_flag:
+      no_lint: false
+      lint: false
+dependencies:
+  - Iota
+  - MoveStdlib
