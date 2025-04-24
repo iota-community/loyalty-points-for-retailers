@@ -62,13 +62,7 @@ iota client switch --address 0xYOUR_ADDRESS
 ### Request testnet IOTA (gas)
 
 ```bash
-curl --location --request POST 'https://faucet.testnet.iota.org/gas' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "FixedAmountRequest": {
-        "recipient": "<YOUR_ADDRESS>"
-    }
-}'
+iota client faucet
 ```
 
 ---
